@@ -35,7 +35,7 @@ def generate_dataset():
     samples_train = generate_2D_gaussian(dataset_size)
     with open('/tmp/samples_train.npy', 'wb') as f:
         np.save(f, samples_train)
-    subprocess.check_call(["python", "render.py"])
+    subprocess.check_call(["python", "plot_dataset.py"])
     with open("/tmp/dataset.png", "rb") as f:
         png_data = f.read()
     formatted_png = "data:image/png;base64," + base64.b64encode(png_data).decode()

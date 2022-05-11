@@ -34,7 +34,9 @@ function App() {
   const [stackedFfjords, setStackedFfjords] = React.useState('0')
   const [numLayers, setNumLayers] = React.useState('0')
   const [numNodes, setNumNodes] = React.useState('0')
+
   const [datasetImg, setDatasetImg] = React.useState(null)
+  const [modelImg, setModelImg] = React.useState(null)
 
   const [textBox, setTextBox] = React.useState('0');
   const [requestResult, setRequestResult] = React.useState(null);
@@ -49,14 +51,10 @@ function App() {
     );
   }
 
-
-
   return (
     <div>
       <div style={{ margin: 20 }}>
-        <h1>
-          toy flow demo
-        </h1>
+        <h1>toy flow demo</h1>
       </div>
 
       <div style={{ margin: 20 }}>
@@ -66,9 +64,7 @@ function App() {
       </div>
 
       <div style={{ margin: 20}}>
-        <h2>
-          generate dataset
-        </h2>
+        <h2>generate dataset</h2>
         First, let's generate the dataset. <br/>
         Dataset size &nbsp; <input
           type='text'
@@ -84,7 +80,6 @@ function App() {
             num_batches: numBatches,
             }),
           });
-          //console.log('Response:', await response.text());
           const json = await response.json();
           console.log('JSON:', json);
           window.sneakyJson = json;
@@ -98,7 +93,7 @@ function App() {
         datasetImg !== null &&
         <img
           style={{
-            width: 500,
+            width: 400,
           }}
           src={datasetImg}
         />
@@ -156,7 +151,21 @@ function App() {
         </table>
       </div>
       <div style={{ margin: 20}}>
-        <button>
+        <button onClick={async () => {
+          const response = await window.fetch('http://127.0.0.1:5000/visualize_model', {
+            method: 'POST',
+            body: JSON.stringify({
+            lr: lr,
+            stacked_ffjords: stackedFfjords,
+            num_layers: numLayers,
+            num_nodes: numNodes*2
+            }),
+          });
+          const json = await response.json();
+          console.log('JSON:', json);
+          window.sneakyJson = json;
+          setDatasetImg(json.pngData);
+        }}>
           visualize model
         </button>
         &nbsp;&nbsp;
