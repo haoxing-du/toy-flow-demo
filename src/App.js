@@ -34,9 +34,9 @@ function App() {
   const [stackedFfjords, setStackedFfjords] = React.useState('0')
   const [numLayers, setNumLayers] = React.useState('0')
   const [numNodes, setNumNodes] = React.useState('0')
+  const [numParams, setNumParams] = React.useState('0')
 
   const [datasetImg, setDatasetImg] = React.useState(null)
-  const [modelImg, setModelImg] = React.useState(null)
 
   const [textBox, setTextBox] = React.useState('0');
   const [requestResult, setRequestResult] = React.useState(null);
@@ -65,7 +65,11 @@ function App() {
 
       <div style={{ margin: 20}}>
         <h2>generate dataset</h2>
-        First, let's generate the dataset. <br/>
+        The toy problem we are considering is this: there is a bunch of points sampled from 2-dimensional Gaussian distributions centered at (a,a).
+        We want to train a model to infer the center of the Gaussian that it most probably came from, for each given point.
+        To do this, let us first generate some training data.
+        We sample a uniformly from the interval [0,1], and then sample one point from the 2D Gaussian centered at (a,a), and add the coordinates of this point together with a to the training dataset.
+        You can choose how many data points you want to generate, and see a plot of the data points generated here. <br/>
         Dataset size &nbsp; <input
           type='text'
           value={numBatches}
@@ -152,7 +156,7 @@ function App() {
       </div>
       <div style={{ margin: 20}}>
         <button onClick={async () => {
-          const response = await window.fetch('http://127.0.0.1:5000/visualize_model', {
+          const response = await window.fetch('http://127.0.0.1:5000/calculate_num_params', {
             method: 'POST',
             body: JSON.stringify({
             lr: lr,
@@ -164,12 +168,28 @@ function App() {
           const json = await response.json();
           console.log('JSON:', json);
           window.sneakyJson = json;
-          setDatasetImg(json.pngData);
+          setNumParams(json.numParams);
         }}>
-          visualize model
+          calculate number of parameters
         </button>
         &nbsp;&nbsp;
-        <button>
+        {numParams} 
+        <br/><br/>
+        <button onClick={async () => {
+          const response = await window.fetch('http://127.0.0.1:5000/train_model', {
+            method: 'POST',
+            body: JSON.stringify({
+            lr: lr,
+            stacked_ffjords: stackedFfjords,
+            num_layers: numLayers,
+            num_nodes: numNodes*2
+            }),
+          });
+          const json = await response.json();
+          console.log('JSON:', json);
+          window.sneakyJson = json;
+          setNumParams(json.numParams);
+        }}>
           train!
         </button>
         <br/><br/>
