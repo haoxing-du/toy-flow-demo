@@ -14,6 +14,34 @@ function ListElement(props) {
   );
 }
 
+function DisplayTrainingProgress() {
+  const [display, setDisplay] = React.useState(null)
+
+  async function getUpdate() {
+    const response = await window.fetch("http://localhost:5000/get_updates", {
+      method: "post",
+      body: JSON.stringify({}),
+    });
+    const result = await response.json();
+    if (result.nextLine.length > 0) {
+      setDisplay(result.nextLine)
+    }
+  }
+
+  React.useEffect(() => {
+      const intervalHandle = setInterval(getUpdate, 1000);
+      return () => {
+          clearInterval(intervalHandle);
+      };
+  });
+
+  return (
+      <pre>
+          {display}
+      </pre>
+  );
+}
+
 function App() {
   const [counter, setCounter] = React.useState(0);
   const [list, setList] = React.useState(
@@ -35,6 +63,7 @@ function App() {
   const [numLayers, setNumLayers] = React.useState('0')
   const [numNodes, setNumNodes] = React.useState('0')
   const [numParams, setNumParams] = React.useState('0')
+  const [showDisplay, setShowDisplay] = React.useState(false)
 
   const [datasetImg, setDatasetImg] = React.useState(null)
 
@@ -50,7 +79,9 @@ function App() {
       />
     );
   }
+  const [value, setValue] = React.useState(0);
 
+  
   return (
     <div>
       <div style={{ margin: 20 }}>
@@ -70,6 +101,7 @@ function App() {
         To do this, let us first generate some training data.
         We sample a uniformly from the interval [0,1], and then sample one point from the 2D Gaussian centered at (a,a), and add the coordinates of this point together with a to the training dataset.
         You can choose how many data points you want to generate, and see a plot of the data points generated here. <br/>
+        <br/>
         Dataset size &nbsp; <input
           type='text'
           value={numBatches}
@@ -188,11 +220,12 @@ function App() {
           const json = await response.json();
           console.log('JSON:', json);
           window.sneakyJson = json;
-          setNumParams(json.numParams);
+          setShowDisplay(true);
         }}>
           train!
         </button>
         <br/><br/>
+        { showDisplay && <DisplayTrainingProgress/> }
         Let's take some samples from the model and see how it learned.
       </div>
 

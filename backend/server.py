@@ -7,6 +7,8 @@ from model import *
 app = Flask(__name__)
 cors = CORS(app, resources={"*": {"origins": "*"}})
 
+sub = None
+
 @app.route('/get_square', methods=["POST"])
 def user():
     data = json.loads(request.data)
@@ -75,6 +77,9 @@ def calculate_num_params():
 
 @app.route('/train_model', methods=["POST"])
 def train_model():
+    global sub
+    if sub is not None:
+        sub.kill()
     data = json.loads(request.data)
     lr = data["lr"]
     stacked_ffjords = data["stacked_ffjords"]
@@ -93,10 +98,23 @@ def train_model():
     fl = fcntl.fcntl(sub.stdout, fcntl.F_GETFL)
     fcntl.fcntl(sub.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
-    for i in range(1000):
-        print(sub.stdout.readline())
-        time.sleep(0.5)
+    #for i in range(100):
+    #    print(sub.stdout.readline())
+    #    time.sleep(0.5)
 
+    return jsonify({})
+
+@app.route('/get_updates', methods=["POST"])
+def get_updates():
+    if sub is None:
+        line = ""
+    else:
+        lines = []
+        while True:
+            line = sub.stdout.readline().decode()
+            lines.append(line)
+            if line == '':
+                break
     return jsonify({
-        "numParams": 0,
+        "nextLine": '\n'.join(lines),
     })
