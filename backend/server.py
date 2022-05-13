@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from model import *
 
+
 app = Flask(__name__)
 cors = CORS(app, resources={"*": {"origins": "*"}})
 
@@ -178,6 +179,65 @@ def plot_samples():
     subprocess.check_call(["python", "plot_samples.py"])
 
     with open("/tmp/samples.png", "rb") as f:
+        png_data = f.read()
+    formatted_png = "data:image/png;base64," + base64.b64encode(png_data).decode()
+    return jsonify({
+        "pngData": formatted_png,
+    })
+
+@app.route('/plot_fixed_a', methods=['POST'])
+def plot_fixed_a():
+    data = json.loads(request.data)
+    fixed_a = float(data["fixed_a"])
+    stacked_ffjords = int(data["stacked_ffjords"])
+    num_layers = int(data["num_layers"])
+    num_nodes = int(data["num_nodes"])
+    num_output = 2
+    num_cond = 1
+    batch_size = 256
+    stacked_mlps = []
+    for _ in range(stacked_ffjords):
+        mlp_model = MLP_ODE(num_nodes*num_output, num_layers, num_output, num_cond)
+        stacked_mlps.append(mlp_model)
+    model = FFJORD(stacked_mlps, batch_size, num_output, \
+        trace_type='exact', name='loaded_model')
+    load_model(model)
+
+    subprocess.check_call(["python", "plot_fixed_a.py", str(fixed_a), str(stacked_ffjords),\
+        str(num_layers), str(num_nodes), str(num_output), str(num_cond), \
+        str(batch_size)])
+    
+    with open("/tmp/fixed_a.png", "rb") as f:
+        png_data = f.read()
+    formatted_png = "data:image/png;base64," + base64.b64encode(png_data).decode()
+    return jsonify({
+        "pngData": formatted_png,
+    })
+
+@app.route('/plot_fixed_xy', methods=['POST'])
+def plot_fixed_xy():
+    data = json.loads(request.data)
+    fixed_x = float(data["fixed_x"])
+    fixed_y = float(data["fixed_y"])
+    stacked_ffjords = int(data["stacked_ffjords"])
+    num_layers = int(data["num_layers"])
+    num_nodes = int(data["num_nodes"])
+    num_output = 2
+    num_cond = 1
+    batch_size = 256
+    stacked_mlps = []
+    for _ in range(stacked_ffjords):
+        mlp_model = MLP_ODE(num_nodes*num_output, num_layers, num_output, num_cond)
+        stacked_mlps.append(mlp_model)
+    model = FFJORD(stacked_mlps, batch_size, num_output, \
+        trace_type='exact', name='loaded_model')
+    load_model(model)
+
+    subprocess.check_call(["python", "plot_fixed_xy.py", str(fixed_x), str(fixed_y), \
+        str(stacked_ffjords), str(num_layers), str(num_nodes), str(num_output), \
+        str(num_cond), str(batch_size)])
+    
+    with open("/tmp/fixed_xy.png", "rb") as f:
         png_data = f.read()
     formatted_png = "data:image/png;base64," + base64.b64encode(png_data).decode()
     return jsonify({

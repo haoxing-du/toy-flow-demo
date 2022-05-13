@@ -69,13 +69,17 @@ function App() {
   const [numNodes, setNumNodes] = React.useState('0')
   const [numParams, setNumParams] = React.useState('0')
   const [fixeda, setFixeda] = React.useState('0')
+  const [fixedx, setFixedx] = React.useState('0')
+  const [fixedy, setFixedy] = React.useState('0')
+  const [nPoints, setNPoints] = React.useState('0')
 
   const [showDisplay, setShowDisplay] = React.useState(false)
 
   const [datasetImg, setDatasetImg] = React.useState(null)
   const [sampleImg, setSampleImg] = React.useState(null)
   const [fixedaImg, setFixedaImg] = React.useState(null)
-  const [fixedxImg, setFixedxImg] = React.useState(null)
+  const [fixedxyImg, setFixedxyImg] = React.useState(null)
+  const [calibImg, setCalibImg] = React.useState(null)
 
   const [textBox, setTextBox] = React.useState('0');
   const [requestResult, setRequestResult] = React.useState(null);
@@ -280,6 +284,7 @@ function App() {
         One of the most prominent benefits of a normalizing flow is that it allows us to simultaneously draw samples and evaluate densities.
         Let us first take a look at the density that our flow has learned. 
         For example, we can check both p(x|a) as a function of x for a fixed a, and p(x|a) as a function of a for a fixed x.
+        
         <h3>
           p(x|a) for fixed a
         </h3>
@@ -289,9 +294,97 @@ function App() {
           onChange={(event) => {
             setFixeda(event.target.value);
           }}
-        /> (between 0 and 1)
+        /> (between 0 and 1) <br/><br/>
         <button onClick={async () => {
           const response = await window.fetch('http://127.0.0.1:5000/plot_fixed_a', {
+            method: 'POST',
+            body: JSON.stringify({
+            num_batches: numBatches,
+            stacked_ffjords: stackedFfjords,
+            num_nodes: numNodes,
+            num_layers: numLayers,
+            fixed_a: fixeda,
+            }),
+          });
+          const json = await response.json();
+          console.log('JSON:', json);
+          window.sneakyJson = json;
+          setFixedaImg(json.pngData);
+        }}>
+          plot
+        </button><br/>
+        {
+          fixedaImg !== null &&
+          <img
+            style={{
+              width: 500,
+            }}
+            src={fixedaImg}
+          />
+        }
+
+        <h3>
+          p(x|a) for fixed x
+        </h3>
+        x &nbsp; <input
+          type='text'
+          value={fixedx}
+          onChange={(event) => {
+            setFixedx(event.target.value);
+          }}
+        /> (between 0 and 1) <br/>
+        y &nbsp; <input
+          type='text'
+          value={fixedy}
+          onChange={(event) => {
+            setFixedy(event.target.value);
+          }}
+        /> (between 0 and 1) <br/><br/>
+        <button onClick={async () => {
+          const response = await window.fetch('http://127.0.0.1:5000/plot_fixed_xy', {
+            method: 'POST',
+            body: JSON.stringify({
+            num_batches: numBatches,
+            stacked_ffjords: stackedFfjords,
+            num_nodes: numNodes,
+            num_layers: numLayers,
+            fixed_x: fixedx,
+            fixed_y: fixedy,
+            }),
+          });
+          const json = await response.json();
+          console.log('JSON:', json);
+          window.sneakyJson = json;
+          setFixedxyImg(json.pngData);
+        }}>
+          plot
+        </button><br/>
+        {
+          fixedxyImg !== null &&
+          <img
+            style={{
+              width: 500,
+            }}
+            src={fixedxyImg}
+          />
+        }
+
+        <h3>
+          calibration curve
+        </h3>
+        With the learned density, we could now produce a calibration curve:
+        We generate a bunch of random points, and plot the most likely conditional value a that the model infers for each point against the true value.
+        The closer it is to a straight, diagonal line, the more calibrated our model is.
+        <br/>
+        number of points &nbsp; <input
+          type='text'
+          value={nPoints}
+          onChange={(event) => {
+            setNPoints(event.target.value);
+          }}
+        /> (recommended: 100) <br/><br/>
+        <button onClick={async () => {
+          const response = await window.fetch('http://127.0.0.1:5000/calibration_curve', {
             method: 'POST',
             body: JSON.stringify({
             num_batches: numBatches,
@@ -303,22 +396,19 @@ function App() {
           const json = await response.json();
           console.log('JSON:', json);
           window.sneakyJson = json;
-          setFixedaImg(json.pngData);
+          setCalibImg(json.pngData);
         }}>
           plot
-        </button>
+        </button><br/>
         {
-          fixedaImg !== null &&
+          calibImg !== null &&
           <img
             style={{
               width: 500,
             }}
-            src={fixedaImg}
+            src={calibImg}
           />
         }
-        <h3>
-          p(x|a) for fixed x
-        </h3>
       </div>
 
 

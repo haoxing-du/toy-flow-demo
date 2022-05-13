@@ -17,5 +17,4 @@ plt.scatter(transformed[:, 0], transformed[:, 1], color="r")
 plt.subplot(122)
 plt.scatter(transformed_first[:, 0], transformed_first[:, 1], color="g")
 plt.scatter(transformed_second[:, 0], transformed_second[:, 1], color="b")
-
-fig.savefig("/tmp/samples.png")
+fig.savefig("/tmp/samples.png", bbox_inches="tight")
