@@ -1,3 +1,12 @@
+## toy flow demo
+
+Haoxing Du, AY250 final project
+
+*Thanks to Peter Schmidt-Nielsen for teaching me React programming!*
+
+To run the app in development mode, run `npm start`.
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

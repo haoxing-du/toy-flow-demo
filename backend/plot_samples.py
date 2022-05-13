@@ -1,9 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from os.path import exists
 
 path_transformed = "/tmp/transformed.npy"
-# assert file exists
 with open("/tmp/transformed.npy", 'rb') as f:
     transformed = np.load(f)
 with open("/tmp/transformed_first.npy", 'rb') as f:

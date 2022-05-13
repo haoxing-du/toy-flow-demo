@@ -1,5 +1,5 @@
 import sys
-from model import *
+from toy_flow_model import *
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 args = sys.argv

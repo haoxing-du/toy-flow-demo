@@ -2,46 +2,35 @@ import base64, fcntl, json, subprocess, time
 from random import sample
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from model import *
-
+from toy_flow_model import *
 
 app = Flask(__name__)
 cors = CORS(app, resources={"*": {"origins": "*"}})
 
+# global variables that will be used for the terminal emulator
 sub = None
 lines = []
 
-@app.route('/get_square', methods=["POST"])
-def user():
-    data = json.loads(request.data)
-    print("I got the following request:", data)
-    return jsonify({
-        "result": data["value"]**2,
-    })
-
-@app.route('/plot_function', methods=["POST"])
-def plot_function():
-    data = json.loads(request.data)
-    y_func = data["y_func"]
-    subprocess.check_call(["python", "render.py", y_func])
-    with open("/tmp/output.png", "rb") as f:
-        png_data = f.read()
-    formatted_png = "data:image/png;base64," + base64.b64encode(png_data).decode()
-    return jsonify({
-        "pngData": formatted_png,
-    })
-
 @app.route('/generate_dataset', methods=["POST"])
 def generate_dataset():
+    """ Generate and plot a dataset of conditional 2D Gaussians.
+    """
     data = json.loads(request.data)
     num_batches = data["num_batches"]
     dataset_size = int(num_batches) * 256
     samples_train = generate_2D_gaussian(dataset_size)
+
+    # store samples_train as file so that plotting script can read it
     with open('/tmp/samples_train.npy', 'wb') as f:
         np.save(f, samples_train)
+    
+    # direct function call gives scary error and makes Python crash,
+    # so use subprocess instead
     subprocess.check_call(["python", "plot_dataset.py"])
+    
     with open("/tmp/dataset.png", "rb") as f:
         png_data = f.read()
+    # generated image is passed as base64 string
     formatted_png = "data:image/png;base64," + base64.b64encode(png_data).decode()
     return jsonify({
         "pngData": formatted_png,
@@ -49,6 +38,9 @@ def generate_dataset():
 
 @app.route('/calculate_num_params', methods=["POST"])
 def calculate_num_params():
+    """ Calculate the number of parameters in the specified 
+        FFJORD model.
+    """
     data = json.loads(request.data)
     lr = float(data["lr"])
     stacked_ffjords = int(data["stacked_ffjords"])
@@ -79,6 +71,9 @@ def calculate_num_params():
 
 @app.route('/train_model', methods=["POST"])
 def train_model():
+    """ Train the FFJORD as a subprocess, and get the training
+        process updated printed out by Keras.
+    """
     global sub, lines
     if sub is not None:
         sub.kill()
@@ -92,37 +87,39 @@ def train_model():
     num_cond = 1
     batch_size = 256
 
+    # this won't work with regular "python" for some reason
     sub = subprocess.Popen(["/Users/haoxingdu/ay250_env/bin/python", "training.py", str(lr), str(stacked_ffjords),\
         str(num_layers), str(num_nodes), str(num_output), str(num_cond), \
         str(batch_size)], \
         stdout=subprocess.PIPE, env={"PYTHONUNBUFFERED": "true"},
     )
 
+    # to make a terminal emulator, set stdout to be nonblocking
     fl = fcntl.fcntl(sub.stdout, fcntl.F_GETFL)
     fcntl.fcntl(sub.stdout, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-
-    #for i in range(100):
-    #    print(sub.stdout.readline())
-    #    time.sleep(0.5)
 
     return jsonify({})
 
 @app.route('/get_updates', methods=["POST"])
 def get_updates():
+    """ Basically a terminal emulator that the frontend checks
+        every second.
+    """
     global lines
     if sub is not None:
         while True:
             line = sub.stdout.readline()
-            #print(line)
             line = line.decode()
             if line == '':
                 break
+            # Keras output flushes training progress line by \r
             list_of_lines = line.split("\r")
             line = list_of_lines[-1]
+            # This is probably not very robust, but basically,
+            # replace the previous line if it is not "Epoch x"
             if line[0] == 'E' or len(lines) > 0 and lines[-1][0] == 'E':
                 lines.append(line)
             else:
-                #print(list_of_lines, line)
                 lines[-1] = line
     return jsonify({
         "nextLine": ''.join(lines),
@@ -238,6 +235,35 @@ def plot_fixed_xy():
         str(num_cond), str(batch_size)])
     
     with open("/tmp/fixed_xy.png", "rb") as f:
+        png_data = f.read()
+    formatted_png = "data:image/png;base64," + base64.b64encode(png_data).decode()
+    return jsonify({
+        "pngData": formatted_png,
+    })
+
+@app.route('/calibration_curve', methods=['POST'])
+def calibration_curve():
+    data = json.loads(request.data)
+    n_points = int(data["n_points"])
+    stacked_ffjords = int(data["stacked_ffjords"])
+    num_layers = int(data["num_layers"])
+    num_nodes = int(data["num_nodes"])
+    num_output = 2
+    num_cond = 1
+    batch_size = 256
+    stacked_mlps = []
+    for _ in range(stacked_ffjords):
+        mlp_model = MLP_ODE(num_nodes*num_output, num_layers, num_output, num_cond)
+        stacked_mlps.append(mlp_model)
+    model = FFJORD(stacked_mlps, batch_size, num_output, \
+        trace_type='exact', name='loaded_model')
+    load_model(model)
+
+    subprocess.check_call(["python", "plot_calib_curve.py", str(n_points), \
+        str(stacked_ffjords), str(num_layers), str(num_nodes), str(num_output), \
+        str(num_cond), str(batch_size)])
+
+    with open("/tmp/calib_curve.png", "rb") as f:
         png_data = f.read()
     formatted_png = "data:image/png;base64," + base64.b64encode(png_data).decode()
     return jsonify({

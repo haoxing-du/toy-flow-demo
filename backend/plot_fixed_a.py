@@ -1,8 +1,7 @@
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
-from model import *
-from os.path import exists
+from toy_flow_model import *
 
 args = sys.argv
 _, a, stacked_ffjords, num_layers, num_nodes, num_output, num_cond, batch_size = args

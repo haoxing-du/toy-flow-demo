@@ -375,7 +375,7 @@ function App() {
         With the learned density, we could now produce a calibration curve:
         We generate a bunch of random points, and plot the most likely conditional value a that the model infers for each point against the true value.
         The closer it is to a straight, diagonal line, the more calibrated our model is.
-        <br/>
+        <br/><br/>
         number of points &nbsp; <input
           type='text'
           value={nPoints}
@@ -391,6 +391,7 @@ function App() {
             stacked_ffjords: stackedFfjords,
             num_nodes: numNodes,
             num_layers: numLayers,
+            n_points: nPoints,
             }),
           });
           const json = await response.json();
