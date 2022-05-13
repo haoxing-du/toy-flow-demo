@@ -36,7 +36,12 @@ function DisplayTrainingProgress() {
   });
 
   return (
-      <pre>
+      <pre style={{
+        border: '1px solid black',
+        padding: 10,
+        margin: 10,
+        color: '#494d52',
+      }}>
           {display}
       </pre>
   );
@@ -63,9 +68,14 @@ function App() {
   const [numLayers, setNumLayers] = React.useState('0')
   const [numNodes, setNumNodes] = React.useState('0')
   const [numParams, setNumParams] = React.useState('0')
+  const [fixeda, setFixeda] = React.useState('0')
+
   const [showDisplay, setShowDisplay] = React.useState(false)
 
   const [datasetImg, setDatasetImg] = React.useState(null)
+  const [sampleImg, setSampleImg] = React.useState(null)
+  const [fixedaImg, setFixedaImg] = React.useState(null)
+  const [fixedxImg, setFixedxImg] = React.useState(null)
 
   const [textBox, setTextBox] = React.useState('0');
   const [requestResult, setRequestResult] = React.useState(null);
@@ -89,6 +99,7 @@ function App() {
       </div>
 
       <div style={{ margin: 20 }}>
+        Normalizing flows are a class of generative models known for their expressive power and conceptual simplicity.
         Let us see how a normalizing flow works by examining a toy example.
         We are going to train a FFJORD to learn a conditional probability density, which is generated from two overlapping 2D Gaussians. 
         Then we are going to perform maximum-likelihood inferences with the model, and demonstrate prior-independence.
@@ -194,7 +205,7 @@ function App() {
             lr: lr,
             stacked_ffjords: stackedFfjords,
             num_layers: numLayers,
-            num_nodes: numNodes*2
+            num_nodes: numNodes,
             }),
           });
           const json = await response.json();
@@ -214,7 +225,7 @@ function App() {
             lr: lr,
             stacked_ffjords: stackedFfjords,
             num_layers: numLayers,
-            num_nodes: numNodes*2
+            num_nodes: numNodes,
             }),
           });
           const json = await response.json();
@@ -226,14 +237,88 @@ function App() {
         </button>
         <br/><br/>
         { showDisplay && <DisplayTrainingProgress/> }
-        Let's take some samples from the model and see how it learned.
+        Let's take some samples from the model and see how it learned. <br/><br/>
+        <button onClick={async () => {
+          const response = await window.fetch('http://127.0.0.1:5000/plot_samples', {
+            method: 'POST',
+            body: JSON.stringify({
+            num_batches: numBatches,
+            stacked_ffjords: stackedFfjords,
+            num_nodes: numNodes,
+            num_layers: numLayers,
+            }),
+          });
+          const json = await response.json();
+          console.log('JSON:', json);
+          window.sneakyJson = json;
+          setSampleImg(json.pngData);
+        }}>
+          sample and plot
+        </button>
       </div>
 
-      <div>
+      {
+        sampleImg !== null &&
+        <img
+          style={{
+            width: 800,
+          }}
+          src={sampleImg}
+        />
+      }
+
+      <div style={{ margin: 20}}>
         <h2>
           maximum-likelihood inference
         </h2>
-
+        We can now use the flow to perform inference.
+        For example, we can answer questions such as: given a point (x,y), what is the mostly likely conditional value?
+        i.e. What is a such that it is most likely that (x,y) had been sampled from the Gaussian centered at (a,a)?
+        <br/>
+        For the this toy problem, note that there is a simple analytical answer: (x+y)/2.
+        <br/><br/>
+        One of the most prominent benefits of a normalizing flow is that it allows us to simultaneously draw samples and evaluate densities.
+        Let us first take a look at the density that our flow has learned. 
+        For example, we can check both p(x|a) as a function of x for a fixed a, and p(x|a) as a function of a for a fixed x.
+        <h3>
+          p(x|a) for fixed a
+        </h3>
+        a &nbsp; <input
+          type='text'
+          value={fixeda}
+          onChange={(event) => {
+            setFixeda(event.target.value);
+          }}
+        /> (between 0 and 1)
+        <button onClick={async () => {
+          const response = await window.fetch('http://127.0.0.1:5000/plot_fixed_a', {
+            method: 'POST',
+            body: JSON.stringify({
+            num_batches: numBatches,
+            stacked_ffjords: stackedFfjords,
+            num_nodes: numNodes,
+            num_layers: numLayers,
+            }),
+          });
+          const json = await response.json();
+          console.log('JSON:', json);
+          window.sneakyJson = json;
+          setFixedaImg(json.pngData);
+        }}>
+          plot
+        </button>
+        {
+          fixedaImg !== null &&
+          <img
+            style={{
+              width: 500,
+            }}
+            src={fixedaImg}
+          />
+        }
+        <h3>
+          p(x|a) for fixed x
+        </h3>
       </div>
 
 

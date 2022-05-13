@@ -8,6 +8,7 @@ app = Flask(__name__)
 cors = CORS(app, resources={"*": {"origins": "*"}})
 
 sub = None
+lines = []
 
 @app.route('/get_square', methods=["POST"])
 def user():
@@ -58,7 +59,7 @@ def calculate_num_params():
 
     stacked_mlps = []
     for _ in range(stacked_ffjords):
-        mlp_model = MLP_ODE(num_nodes, num_layers, num_output, num_cond)
+        mlp_model = MLP_ODE(num_nodes*num_output, num_layers, num_output, num_cond)
         stacked_mlps.append(mlp_model)
 
     #Create the model
@@ -77,9 +78,10 @@ def calculate_num_params():
 
 @app.route('/train_model', methods=["POST"])
 def train_model():
-    global sub
+    global sub, lines
     if sub is not None:
         sub.kill()
+    lines = []
     data = json.loads(request.data)
     lr = data["lr"]
     stacked_ffjords = data["stacked_ffjords"]
@@ -106,15 +108,78 @@ def train_model():
 
 @app.route('/get_updates', methods=["POST"])
 def get_updates():
-    if sub is None:
-        line = ""
-    else:
-        lines = []
+    global lines
+    if sub is not None:
         while True:
-            line = sub.stdout.readline().decode()
-            lines.append(line)
+            line = sub.stdout.readline()
+            #print(line)
+            line = line.decode()
             if line == '':
                 break
+            list_of_lines = line.split("\r")
+            line = list_of_lines[-1]
+            if line[0] == 'E' or len(lines) > 0 and lines[-1][0] == 'E':
+                lines.append(line)
+            else:
+                #print(list_of_lines, line)
+                lines[-1] = line
     return jsonify({
-        "nextLine": '\n'.join(lines),
+        "nextLine": ''.join(lines),
+    })
+
+@app.route('/plot_samples', methods=["POST"])
+def plot_samples():
+    data = json.loads(request.data)
+    num_batches = int(data["num_batches"])
+    stacked_ffjords = int(data["stacked_ffjords"])
+    num_layers = int(data["num_layers"])
+    num_nodes = int(data["num_nodes"])
+    num_output = 2
+    num_cond = 1
+    batch_size = 256
+    dataset_size = num_batches * batch_size
+    stacked_mlps = []
+    for _ in range(stacked_ffjords):
+        mlp_model = MLP_ODE(num_nodes*num_output, num_layers, num_output, num_cond)
+        stacked_mlps.append(mlp_model)
+    model = FFJORD(stacked_mlps, batch_size, num_output, \
+        trace_type='exact', name='loaded_model')
+    load_model(model)
+    
+    path = "/tmp/samples_train.npy"
+    with open(path, 'rb') as f:
+        samples_train = np.load(f)
+
+    transformed = model.flow.sample(
+        dataset_size,
+        bijector_kwargs=make_bijector_kwargs(
+            model.flow.bijector, {'bijector.': {'conditional_input': samples_train[:,2].reshape(dataset_size,1)}})
+    )
+
+    transformed_first = model.flow.sample(
+        dataset_size,
+        bijector_kwargs=make_bijector_kwargs(
+            model.flow.bijector, {'bijector.': {'conditional_input': np.ones((dataset_size,1),dtype=np.float32)}})
+    )
+
+    transformed_second = model.flow.sample(
+        dataset_size,
+        bijector_kwargs=make_bijector_kwargs(
+            model.flow.bijector, {'bijector.': {'conditional_input': np.zeros((dataset_size,1),dtype=np.float32)}})
+    )
+
+    with open('/tmp/transformed.npy', 'wb') as f:
+        np.save(f, transformed)
+    with open('/tmp/transformed_first.npy', 'wb') as f:
+        np.save(f, transformed_first)
+    with open('/tmp/transformed_second.npy', 'wb') as f:
+        np.save(f, transformed_second)
+
+    subprocess.check_call(["python", "plot_samples.py"])
+
+    with open("/tmp/samples.png", "rb") as f:
+        png_data = f.read()
+    formatted_png = "data:image/png;base64," + base64.b64encode(png_data).decode()
+    return jsonify({
+        "pngData": formatted_png,
     })

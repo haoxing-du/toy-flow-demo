@@ -16,7 +16,7 @@ path = "/tmp/samples_train.npy"
 
 stacked_mlps = []
 for _ in range(stacked_ffjords):
-    mlp_model = MLP_ODE(num_nodes, num_layers, num_output, num_cond)
+    mlp_model = MLP_ODE(num_nodes*num_output, num_layers, num_output, num_cond)
     stacked_mlps.append(mlp_model)
 
 #Create the model

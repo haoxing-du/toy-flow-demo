@@ -57,12 +57,12 @@ def make_bijector_kwargs(bijector, name_to_kwargs):
                 return kwargs
     return {}
 
-def save_model(model,name="ffjord",checkpoint_dir = '/checkpoints'):
+def save_model(model,name="ffjord",checkpoint_dir = '/tmp'):
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
     model.save_weights('{}/{}'.format(checkpoint_dir,name,save_format='tf'))
 
-def load_model(model,name="ffjord",checkpoint_dir = '/checkpoints'):
+def load_model(model,name="ffjord",checkpoint_dir = '/tmp'):
     model.load_weights('{}/{}'.format(checkpoint_dir,name,save_format='tf')).expect_partial()
     
         
