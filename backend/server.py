@@ -102,8 +102,8 @@ def train_model():
 
 @app.route('/get_updates', methods=["POST"])
 def get_updates():
-    """ Basically a terminal emulator that the frontend checks
-        every second.
+    """ The frontend calls this periodically to get new lines from
+        the stdout of the training progress.
     """
     global lines
     if sub is not None:
@@ -127,6 +127,8 @@ def get_updates():
 
 @app.route('/plot_samples', methods=["POST"])
 def plot_samples():
+    """ Take samples from trained model and plot them.
+    """
     data = json.loads(request.data)
     num_batches = int(data["num_batches"])
     stacked_ffjords = int(data["stacked_ffjords"])
@@ -184,6 +186,8 @@ def plot_samples():
 
 @app.route('/plot_fixed_a', methods=['POST'])
 def plot_fixed_a():
+    """ Plot density as a function of x for a fixed a.
+    """
     data = json.loads(request.data)
     fixed_a = float(data["fixed_a"])
     stacked_ffjords = int(data["stacked_ffjords"])
@@ -213,6 +217,8 @@ def plot_fixed_a():
 
 @app.route('/plot_fixed_xy', methods=['POST'])
 def plot_fixed_xy():
+    """ Plot density as a function of a for a fixed point (x,y).
+    """
     data = json.loads(request.data)
     fixed_x = float(data["fixed_x"])
     fixed_y = float(data["fixed_y"])
@@ -243,6 +249,9 @@ def plot_fixed_xy():
 
 @app.route('/calibration_curve', methods=['POST'])
 def calibration_curve():
+    """ Plot the calibration curve, learned vs actual most likely
+        conditional value for some number of random points.
+    """
     data = json.loads(request.data)
     n_points = int(data["n_points"])
     stacked_ffjords = int(data["stacked_ffjords"])

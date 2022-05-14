@@ -1,19 +1,6 @@
 import React from 'react';
 
-function ListElement(props) {
-  return (
-    <div style={{
-      border: '1px solid black',
-      padding: 10,
-      margin: 10,
-      backgroundColor: '#808080',
-      color: 'white',
-    }}>
-      {props.label}: {props.value}
-    </div>
-  );
-}
-
+// terminal emulator
 function DisplayTrainingProgress() {
   const [display, setDisplay] = React.useState(null)
 
@@ -48,20 +35,6 @@ function DisplayTrainingProgress() {
 }
 
 function App() {
-  const [counter, setCounter] = React.useState(0);
-  const [list, setList] = React.useState(
-    [
-      {
-        label: 'hello',
-        value: 3,
-      },
-      {
-        label: 'flob',
-        value: 5,
-      },
-    ]
-  );
-  
   const [numBatches, setNumBatches] = React.useState('0')
   const [lr, setLr] = React.useState('0')
   const [stackedFfjords, setStackedFfjords] = React.useState('0')
@@ -81,20 +54,6 @@ function App() {
   const [fixedxyImg, setFixedxyImg] = React.useState(null)
   const [calibImg, setCalibImg] = React.useState(null)
 
-  const [textBox, setTextBox] = React.useState('0');
-  const [requestResult, setRequestResult] = React.useState(null);
-
-  const renderedListElements = [];
-  for (const entry of list) {
-    renderedListElements.push(
-      <ListElement
-        label={entry.label}
-        value={entry.value}
-      />
-    );
-  }
-  const [value, setValue] = React.useState(0);
-
   
   return (
     <div>
@@ -103,27 +62,29 @@ function App() {
       </div>
 
       <div style={{ margin: 20 }}>
-        Normalizing flows are a class of generative models known for their expressive power and conceptual simplicity.
+        <a href="https://arxiv.org/abs/1912.02762">Normalizing flows</a> are a class of generative models known for their expressive power and conceptual simplicity.
         Let us see how a normalizing flow works by examining a toy example.
-        We are going to train a FFJORD to learn a conditional probability density, which is generated from two overlapping 2D Gaussians. 
-        Then we are going to perform maximum-likelihood inferences with the model, and demonstrate prior-independence.
+        We are going to train a <a href="https://arxiv.org/abs/1810.01367">FFJORD</a> to learn a conditional probability density, which is generated from two overlapping 2D Gaussians. 
+        Then we are going to visualize what the model has learned, and perform maximum-likelihood inferences with the model.
       </div>
 
       <div style={{ margin: 20}}>
         <h2>generate dataset</h2>
-        The toy problem we are considering is this: there is a bunch of points sampled from 2-dimensional Gaussian distributions centered at (a,a).
-        We want to train a model to infer the center of the Gaussian that it most probably came from, for each given point.
+        The toy problem we are considering is this: 
+        There are a bunch of points (x,y) sampled from 2-dimensional Gaussian distributions centered at (a,a).
+        We want to train a model to learn the conditional probability distribution, p(x,y|a).
         To do this, let us first generate some training data.
-        We sample a uniformly from the interval [0,1], and then sample one point from the 2D Gaussian centered at (a,a), and add the coordinates of this point together with a to the training dataset.
+        We first sample a uniformly from the interval [0,1], and then sample one point (x,y) from the 2D Gaussian centered at (a,a), and add the tuple (x,y,a) to the training dataset.
         You can choose how many data points you want to generate, and see a plot of the data points generated here. <br/>
         <br/>
-        Dataset size &nbsp; <input
+        dataset size &nbsp; <input
           type='text'
           value={numBatches}
           onChange={(event) => {
             setNumBatches(event.target.value);
           }}
         /> * 256 (batch size) = {numBatches * 256}<br/>
+        <span style={{fontSize: 14}}>(recommended: 100; best: 1600)</span> <br/><br/>
         <button onClick={async () => {
           const response = await window.fetch('http://127.0.0.1:5000/generate_dataset', {
             method: 'POST',
@@ -154,7 +115,8 @@ function App() {
         <h2>
           model and training
         </h2>
-        Now, pick the model parameters: <br/><br/>
+        Now, pick the model parameters. 
+        We are using a series of FFJORDs, and you can specify the number of FFJORDs, the number of hidden layers in each FFJORD, the number of nodes per layer, as well as the initial learning rate. <br/><br/>
         <table>
           <tbody>
             <tr>
@@ -200,8 +162,10 @@ function App() {
             </tr>
           </tbody>
         </table>
+        <span style={{fontSize: 14}}>(recommended: 0.001, 3, 3, 4; best: 0.0005, 5, 3, 12)</span>
       </div>
       <div style={{ margin: 20}}>
+      Before we start the training process, let's see how many parameters are in the model you specified. <br/><br/>
         <button onClick={async () => {
           const response = await window.fetch('http://127.0.0.1:5000/calculate_num_params', {
             method: 'POST',
@@ -222,6 +186,12 @@ function App() {
         &nbsp;&nbsp;
         {numParams} 
         <br/><br/>
+        Now, let's train the model! 
+        The training process uses Keras, and uses a train/validation split of 90/10. 
+        It monitors the validation loss, and has callbacks EarlyStopping and ReducedLROnPlateau.
+        <br/>
+        For the "recommended" values, expect the first epoch to take about a minute, and subsequent epochs to take about 5 seconds.
+        For the "best" values, expect each epoch to take on the order of 5 minutes. <br/><br/>
         <button onClick={async () => {
           const response = await window.fetch('http://127.0.0.1:5000/train_model', {
             method: 'POST',
@@ -241,7 +211,9 @@ function App() {
         </button>
         <br/><br/>
         { showDisplay && <DisplayTrainingProgress/> }
-        Let's take some samples from the model and see how it learned. <br/><br/>
+        Let's take some samples from the model and see how it learned.
+        Let's take the same number of samples from the model as the dataset size specified above.
+       <br/><br/>
         <button onClick={async () => {
           const response = await window.fetch('http://127.0.0.1:5000/plot_samples', {
             method: 'POST',
@@ -263,12 +235,18 @@ function App() {
 
       {
         sampleImg !== null &&
-        <img
+        <div style={{ margin: 20}}>
+          <img
           style={{
             width: 800,
           }}
           src={sampleImg}
-        />
+        /><br/>
+        Each color contains the same number of points as the dataset size you specified above.
+        The <span style={{color: "#fc2121"}}>red</span> points are sampled with the same conditional values as the ones in the training set.
+        The <span style={{color: "#2128fc"}}>blue</span> points are sampled with a conditional value of 0, and the <span style={{color: "#008c02"}}>green</span> points are sampled with a conditional value of 1.
+        Do the <span style={{color: "#2128fc"}}>blue</span> and <span style={{color: "#008c02"}}>green</span> points look like 2D Gaussians centered at (0,0) and (1,1)?
+        </div>
       }
 
       <div style={{ margin: 20}}>
@@ -283,10 +261,10 @@ function App() {
         <br/><br/>
         One of the most prominent benefits of a normalizing flow is that it allows us to simultaneously draw samples and evaluate densities.
         Let us first take a look at the density that our flow has learned. 
-        For example, we can check both p(x|a) as a function of x for a fixed a, and p(x|a) as a function of a for a fixed x.
+        For example, we can check both p(x,y|a) as a function of x (or y) for a fixed a, and p(x,y|a) as a function of a for a fixed (x,y).
         
         <h3>
-          p(x|a) for fixed a
+          p(x,y|a) for fixed a
         </h3>
         a &nbsp; <input
           type='text'
@@ -312,19 +290,22 @@ function App() {
           setFixedaImg(json.pngData);
         }}>
           plot
-        </button><br/>
+        </button> &nbsp; (this might take ~5 seconds)<br/>
         {
           fixedaImg !== null &&
-          <img
-            style={{
-              width: 500,
-            }}
-            src={fixedaImg}
-          />
+          <div>
+            <img
+              style={{
+                width: 500,
+              }}
+              src={fixedaImg}
+            /><br/>
+            Here we are plotting the slice along y=x.
+          </div>
         }
 
         <h3>
-          p(x|a) for fixed x
+          p(x,y|a) for fixed (x,y)
         </h3>
         x &nbsp; <input
           type='text'
@@ -411,72 +392,14 @@ function App() {
           />
         }
       </div>
-
-
-
-
-      <br/>
-      <br/>
-      Counter: {counter}<br/>
-
-      <button onClick={() => {
-        setCounter(counter + 1);
-      }}>
-        Increase value
-      </button>
-
-      <div>
-        {renderedListElements}
-      </div>
-      <button onClick={() => {
-        setList(
-          [...list, {
-            label: 'new',
-            value: Math.random(),
-          }],
-        );
-      }}
-      >
-        Create new entry
-      </button>
-
+      
       <div style={{ margin: 20 }}>
-        Value: <input
-          type='text'
-          value={textBox}
-          onChange={(event) => {
-            setTextBox(event.target.value);
-          }}
-        /><br/>
-
-        <button onClick={async () => {
-          const response = await window.fetch('http://localhost:5000/plot_function', {
-            method: 'POST',
-            body: JSON.stringify({
-              y_func: textBox,
-            }),
-          });
-          //console.log('Response:', await response.text());
-          const json = await response.json();
-          console.log('JSON:', json);
-          window.sneakyJson = json;
-          setRequestResult(json.pngData);
-        }}>
-          Plot function
-        </button><br/>
-
-        {/* Result: {requestResult} */}
+        <h2>physics application: particle reconstruction at the LHC</h2>
+        With this toy example, we demonstrated a functioning normalizing flow that is capable of learning a conditional probability distribution, and perform maximum-likelihood inference with it.
+        We are now working on using this technique to unify simulation and particle reconstruction at the LHC, similar to some previous work named <a href="https://arxiv.org/abs/2106.05285">CaloFlow</a>.
+        Our research code is at <a href="https://github.com/ViniciusMikuni/ToyFlow">this GitHub repo</a>.
+        Stay tuned!
       </div>
-
-      {
-        requestResult !== null &&
-        <img
-          style={{
-            width: 200,
-          }}
-          src={requestResult}
-        />
-      }
     </div>
   );
 }
