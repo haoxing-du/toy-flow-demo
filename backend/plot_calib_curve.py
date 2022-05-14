@@ -51,7 +51,7 @@ for point in points:
     c_maxs.append(c_max)
     c_max_maths.append(c_max_math)
 
-fig = plt.figure(figsize=(6,4))
+fig = plt.figure(figsize=(5,5))
 plt.scatter(c_max_maths, c_maxs)
 plt.xlabel("mathematical result")
 plt.ylabel("inferred result")

@@ -5,7 +5,7 @@ function DisplayTrainingProgress() {
   const [display, setDisplay] = React.useState(null)
 
   async function getUpdate() {
-    const response = await window.fetch("http://localhost:5000/get_updates", {
+    const response = await window.fetch(`${window.location.protocol}//${window.location.hostname}:5000/get_updates`, {
       method: "post",
       body: JSON.stringify({}),
     });
@@ -86,7 +86,7 @@ function App() {
         /> * 256 (batch size) = {numBatches * 256}<br/>
         <span style={{fontSize: 14}}>(recommended: 100; best: 1600)</span> <br/><br/>
         <button onClick={async () => {
-          const response = await window.fetch('http://127.0.0.1:5000/generate_dataset', {
+          const response = await window.fetch(`${window.location.protocol}//${window.location.hostname}:5000/generate_dataset`, {
             method: 'POST',
             body: JSON.stringify({
             num_batches: numBatches,
@@ -167,7 +167,7 @@ function App() {
       <div style={{ margin: 20}}>
       Before we start the training process, let's see how many parameters are in the model you specified. <br/><br/>
         <button onClick={async () => {
-          const response = await window.fetch('http://127.0.0.1:5000/calculate_num_params', {
+          const response = await window.fetch(`${window.location.protocol}//${window.location.hostname}:5000/calculate_num_params`, {
             method: 'POST',
             body: JSON.stringify({
             lr: lr,
@@ -193,7 +193,7 @@ function App() {
         For the "recommended" values, expect the first epoch to take about a minute, and subsequent epochs to take about 5 seconds.
         For the "best" values, expect each epoch to take on the order of 5 minutes. <br/><br/>
         <button onClick={async () => {
-          const response = await window.fetch('http://127.0.0.1:5000/train_model', {
+          const response = await window.fetch(`${window.location.protocol}//${window.location.hostname}:5000/train_model`, {
             method: 'POST',
             body: JSON.stringify({
             lr: lr,
@@ -215,7 +215,7 @@ function App() {
         Let's take the same number of samples from the model as the dataset size specified above.
        <br/><br/>
         <button onClick={async () => {
-          const response = await window.fetch('http://127.0.0.1:5000/plot_samples', {
+          const response = await window.fetch(`${window.location.protocol}//${window.location.hostname}:5000/plot_samples`, {
             method: 'POST',
             body: JSON.stringify({
             num_batches: numBatches,
@@ -274,7 +274,7 @@ function App() {
           }}
         /> (between 0 and 1) <br/><br/>
         <button onClick={async () => {
-          const response = await window.fetch('http://127.0.0.1:5000/plot_fixed_a', {
+          const response = await window.fetch(`${window.location.protocol}//${window.location.hostname}:5000/plot_fixed_a`, {
             method: 'POST',
             body: JSON.stringify({
             num_batches: numBatches,
@@ -322,7 +322,7 @@ function App() {
           }}
         /> (between 0 and 1) <br/><br/>
         <button onClick={async () => {
-          const response = await window.fetch('http://127.0.0.1:5000/plot_fixed_xy', {
+          const response = await window.fetch(`${window.location.protocol}//${window.location.hostname}:5000/plot_fixed_xy`, {
             method: 'POST',
             body: JSON.stringify({
             num_batches: numBatches,
@@ -363,9 +363,9 @@ function App() {
           onChange={(event) => {
             setNPoints(event.target.value);
           }}
-        /> (recommended: 100) <br/><br/>
+        /> (recommended: 50) <br/><br/>
         <button onClick={async () => {
-          const response = await window.fetch('http://127.0.0.1:5000/calibration_curve', {
+          const response = await window.fetch(`${window.location.protocol}//${window.location.hostname}:5000/calibration_curve`, {
             method: 'POST',
             body: JSON.stringify({
             num_batches: numBatches,
