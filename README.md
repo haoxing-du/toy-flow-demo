@@ -7,6 +7,7 @@ The backend is served with Flask, and the frontend is written with React.
 
 To run the app in development mode, run 
     
+    pip install -r requirements.txt
     npm install
     npm start
 

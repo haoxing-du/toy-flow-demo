@@ -88,7 +88,7 @@ def train_model():
     batch_size = 256
 
     # this won't work with regular "python" for some reason
-    sub = subprocess.Popen(["/Users/haoxingdu/ay250_env/bin/python", "training.py", str(lr), str(stacked_ffjords),\
+    sub = subprocess.Popen(["python", "training.py", str(lr), str(stacked_ffjords),\
         str(num_layers), str(num_nodes), str(num_output), str(num_cond), \
         str(batch_size)], \
         stdout=subprocess.PIPE, env={"PYTHONUNBUFFERED": "true"},
